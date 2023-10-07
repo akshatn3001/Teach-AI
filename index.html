@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Text Narration</title>
+</head>
+<body>
+    <h1>Text Narration</h1>
+    <form action="/narrate" method="POST">
+        <textarea name="text" rows="5" cols="50" placeholder="Paste or type your text here"></textarea>
+        <br>
+        <input type="submit" value="Start Narration">
+    </form>
+    <button id="startRecording">Start Recording</button>
+    <div id="recognizedText"></div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const startRecordingButton = document.getElementById('startRecording');
+            const recognizedText = document.getElementById('recognizedText');
+            let recognition;
+
+            // Check if the browser supports speech recognition
+            if ('webkitSpeechRecognition' in window) {
+                recognition = new webkitSpeechRecognition();
+
+                recognition.onstart = function () {
+                    recognizedText.textContent = 'Recording...';
+                };
+
+                recognition.onresult = function (event) {
+                    const result = event.results[0][0].transcript;
+                    recognizedText.textContent = 'Recognized: ' + result;
+
+                    // Send the recognized text to the server
+                    sendUserInputToServer(result);
+                };
+
+                recognition.onerror = function (event) {
+                    console.error('Speech recognition error:', event.error);
+                };
+
+                recognition.onend = function () {
+                    recognizedText.textContent = 'Click "Start Recording" to speak';
+                };
+
+                startRecordingButton.addEventListener('click', function () {
+                    if (recognition) {
+                        recognition.start();
+                    }
+                });
+            } else {
+                // Speech recognition not supported in this browser
+                recognizedText.textContent = 'Speech recognition is not supported in your browser.';
+            }
+
+            // Function to send recognized text to the server
+            function sendUserInputToServer(text) {
+                fetch('/ask_question', {
+                    method: 'POST',
+                    body: JSON.stringify({ question: text }),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.text())
+                .then(data => {
+                    // Handle the response from the server if needed
+                    console.log(data);
+                })
+                .catch(error => {
+                    console.error('Error sending user input:', error);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
